@@ -40,7 +40,7 @@ class DockerDeploymentTests(unittest.TestCase):
             compose = yaml.safe_load(handle)
         service = compose["services"]["sub2api"]
         self.assertIn("build", service)
-        self.assertEqual(service["build"]["context"], "..")
+        self.assertEqual(service["build"]["context"], ".")
         self.assertEqual(service["build"]["dockerfile"], "deploy/Dockerfile")
         self.assertEqual(service["build"]["args"]["COMMIT"], "${SOURCE_COMMIT:-docker}")
 
