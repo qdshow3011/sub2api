@@ -3,10 +3,12 @@ package repository
 import (
 	"database/sql"
 	"errors"
+	"time"
 
 	entsql "entgo.io/ent/dialect/sql"
 	"github.com/Wei-Shaw/sub2api/ent"
 	"github.com/Wei-Shaw/sub2api/internal/config"
+	"github.com/Wei-Shaw/sub2api/internal/pkg/startupretry"
 	"github.com/Wei-Shaw/sub2api/internal/service"
 	"github.com/google/wire"
 	"github.com/redis/go-redis/v9"
@@ -162,8 +164,16 @@ var ProviderSet = wire.NewSet(
 // 依赖：config.Config
 // 提供：*ent.Client
 func ProvideEnt(cfg *config.Config) (*ent.Client, error) {
-	client, _, err := InitEnt(cfg)
-	return client, err
+	var client *ent.Client
+	err := startupretry.Retry("database initialization", 12, 5*time.Second, func() error {
+		var initErr error
+		client, _, initErr = InitEnt(cfg)
+		return initErr
+	})
+	if err != nil {
+		return nil, err
+	}
+	return client, nil
 }
 
 // ProvideSQLDB 从 Ent 客户端提取底层的 *sql.DB 连接。
