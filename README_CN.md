@@ -356,6 +356,7 @@ ADMIN_PASSWORD=your_admin_password
 
 # 可选：自定义端口
 SERVER_PORT=8080
+HOST_PORT=8080
 ```
 
 **生成安全密钥：**

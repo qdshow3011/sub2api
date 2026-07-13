@@ -352,6 +352,7 @@ ADMIN_PASSWORD=your_admin_password
 
 # Optional: Custom port
 SERVER_PORT=8080
+HOST_PORT=8080
 ```
 
 **Generate secure secrets:**
