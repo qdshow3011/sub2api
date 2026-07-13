@@ -217,6 +217,7 @@ docker compose down -v
 | `JWT_SECRET` | **Recommended** | *(auto-generated)* | JWT secret (fixed for persistent sessions) |
 | `TOTP_ENCRYPTION_KEY` | **Recommended** | *(auto-generated)* | TOTP encryption key (fixed for persistent 2FA) |
 | `SERVER_PORT` | No | `8080` | Server port |
+| `HOST_PORT` | No | `8080` | Host-side published port; change it if the port is already in use |
 | `ADMIN_EMAIL` | No | `admin@sub2api.local` | Admin email |
 | `ADMIN_PASSWORD` | No | *(auto-generated)* | Admin password |
 | `TZ` | No | `Asia/Shanghai` | Timezone |
@@ -554,7 +555,7 @@ sudo systemctl status redis
 
 ### Common Issues
 
-1. **Port already in use**: Change `SERVER_PORT` in `.env` or systemd config
+1. **Port already in use**: Change `HOST_PORT` in `.env` (for example, `HOST_PORT=8081`). In Coolify, configure the same host port in the service settings or remove the host port mapping and expose container port `8080` through the proxy.
 2. **Database connection failed**: Check PostgreSQL is running and credentials are correct
 3. **Redis connection failed**: Check Redis is running and password is correct
 4. **Permission denied**: Ensure proper file ownership for binary install

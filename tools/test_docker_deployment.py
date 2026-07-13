@@ -35,6 +35,13 @@ class DockerDeploymentTests(unittest.TestCase):
             if "image: weishaw/sub2api" in text:
                 self.assertIn("${SUB2API_IMAGE:-", text, path)
 
+    def test_host_port_is_separate_from_container_port(self):
+        for path in COMPOSE_FILES:
+            text = path.read_text(encoding="utf-8")
+            if '"${BIND_HOST' in text:
+                self.assertIn("${HOST_PORT:-8080}:8080", text, path)
+                self.assertNotIn("${SERVER_PORT:-8080}:8080", text, path)
+
 
     def test_deploy_script_validates_downloads_and_docker(self):
         text = (DEPLOY / "docker-deploy.sh").read_text(encoding="utf-8")
