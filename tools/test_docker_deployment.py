@@ -89,6 +89,12 @@ class DockerDeploymentTests(unittest.TestCase):
             env_items = compose["services"]["sub2api"]["environment"]
             self.assertIn("SETUP_MIGRATION_TIMEOUT_SECONDS=${SETUP_MIGRATION_TIMEOUT_SECONDS:-300}", env_items, path)
 
+    def test_production_compose_does_not_depend_on_sidecar_healthchecks(self):
+        with (DEPLOY / "docker-compose.yml").open("r", encoding="utf-8") as handle:
+            compose = yaml.safe_load(handle)
+        service = compose["services"]["sub2api"]
+        self.assertNotIn("depends_on", service)
+
 
 if __name__ == "__main__":
     unittest.main()
