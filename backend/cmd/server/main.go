@@ -56,6 +56,7 @@ func init() {
 func main() {
 	logger.InitBootstrap()
 	defer logger.Sync()
+	log.Printf("BOOTSTRAP_BUILD version=%s commit=%s date=%s build_type=%s", Version, Commit, Date, BuildType)
 
 	// Parse command line flags
 	setupMode := flag.Bool("setup", false, "Run setup wizard in CLI mode")
