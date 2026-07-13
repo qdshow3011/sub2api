@@ -70,6 +70,18 @@ class DockerDeploymentTests(unittest.TestCase):
         self.assertIn("curl -fsSL", text)
         self.assertTrue("--fail" in text or "curl -fsSL" in text)
 
+    def test_health_checks_use_curl_with_longer_start_period(self):
+        for path in COMPOSE_FILES:
+            with path.open("r", encoding="utf-8") as handle:
+                compose = yaml.safe_load(handle)
+            healthcheck = compose["services"]["sub2api"].get("healthcheck", {})
+            self.assertEqual(healthcheck.get("test"), ["CMD", "curl", "-fsS", "http://localhost:8080/health"], path)
+            self.assertEqual(healthcheck.get("start_period"), "60s", path)
+
+        dockerfile = (DEPLOY / "Dockerfile").read_text(encoding="utf-8")
+        self.assertIn("HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3", dockerfile)
+        self.assertIn('CMD curl -fsS "http://localhost:${SERVER_PORT:-8080}/health" >/dev/null || exit 1', dockerfile)
+
 
 if __name__ == "__main__":
     unittest.main()
