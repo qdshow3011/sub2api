@@ -20,8 +20,25 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-# GitHub raw content base URL
-GITHUB_RAW_URL="https://raw.githubusercontent.com/Wei-Shaw/sub2api/main/deploy"
+# GitHub raw content base URL. Override with SUB2API_RAW_BASE_URL when using
+# a private mirror or a fork that does not publish the same image.
+if [ -n "${SUB2API_RAW_BASE_URL:-}" ]; then
+    GITHUB_RAW_URL="$SUB2API_RAW_BASE_URL"
+else
+    REPO_URL=$(git config --get remote.origin.url 2>/dev/null || true)
+    case "$REPO_URL" in
+        *github.com[:/]*)
+            REPO_PATH="${REPO_URL#https://github.com/}"
+            REPO_PATH="${REPO_PATH#http://github.com/}"
+            REPO_PATH="${REPO_PATH#git@github.com:}"
+            REPO_PATH="${REPO_PATH%.git}"
+            ;;
+        *)
+            REPO_PATH="Wei-Shaw/sub2api"
+            ;;
+    esac
+    GITHUB_RAW_URL="https://raw.githubusercontent.com/${REPO_PATH}/main/deploy"
+fi
 
 # Print colored message
 print_info() {
@@ -64,6 +81,11 @@ main() {
         exit 1
     fi
 
+    if ! command_exists docker || ! docker compose version >/dev/null 2>&1; then
+        print_error "Docker Compose v2 is required. Install Docker Desktop or Docker Engine with the Compose plugin first."
+        exit 1
+    fi
+
     # Check if deployment already exists
     if [ -f "docker-compose.yml" ] && [ -f ".env" ]; then
         print_warning "Deployment files already exist in current directory."
@@ -77,23 +99,12 @@ main() {
 
     # Download docker-compose.local.yml and save as docker-compose.yml
     print_info "Downloading docker-compose.yml..."
-    if command_exists curl; then
-        curl -sSL "${GITHUB_RAW_URL}/docker-compose.local.yml" -o docker-compose.yml
-    elif command_exists wget; then
-        wget -q "${GITHUB_RAW_URL}/docker-compose.local.yml" -O docker-compose.yml
-    else
-        print_error "Neither curl nor wget is installed. Please install one of them."
-        exit 1
-    fi
+    download_file "${GITHUB_RAW_URL}/docker-compose.local.yml" docker-compose.yml
     print_success "Downloaded docker-compose.yml"
 
     # Download .env.example
     print_info "Downloading .env.example..."
-    if command_exists curl; then
-        curl -sSL "${GITHUB_RAW_URL}/.env.example" -o .env.example
-    else
-        wget -q "${GITHUB_RAW_URL}/.env.example" -O .env.example
-    fi
+    download_file "${GITHUB_RAW_URL}/.env.example" .env.example
     print_success "Downloaded .env.example"
 
     # Generate .env file with auto-generated secrets
@@ -135,13 +146,7 @@ main() {
     echo "  Preparation Complete!"
     echo "=========================================="
     echo ""
-    echo "Generated secure credentials:"
-    echo "  POSTGRES_PASSWORD:     ${POSTGRES_PASSWORD}"
-    echo "  JWT_SECRET:            ${JWT_SECRET}"
-    echo "  TOTP_ENCRYPTION_KEY:   ${TOTP_ENCRYPTION_KEY}"
-    echo ""
-    print_warning "These credentials have been saved to .env file."
-    print_warning "Please keep them secure and do not share publicly!"
+    print_success "Generated secure credentials and saved them to .env."
     echo ""
     echo "Directory structure:"
     echo "  docker-compose.yml        - Docker Compose configuration"
@@ -165,6 +170,19 @@ main() {
     print_info "If admin password is not set in .env, it will be auto-generated."
     print_info "Check logs for the generated admin password on first startup."
     echo ""
+}
+
+download_file() {
+    url="$1"
+    destination="$2"
+    if command_exists curl; then
+        curl -fsSL --retry 3 --retry-delay 2 "$url" -o "$destination"
+    elif command_exists wget; then
+        wget -q --tries=3 "$url" -O "$destination"
+    else
+        print_error "Neither curl nor wget is installed. Please install one of them."
+        exit 1
+    fi
 }
 
 # Run main function

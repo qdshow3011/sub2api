@@ -48,7 +48,11 @@ chmod +x docker-deploy.sh
 - Automatically generates secure secrets (JWT_SECRET, TOTP_ENCRYPTION_KEY, POSTGRES_PASSWORD)
 - Creates `.env` file with generated secrets
 - Creates necessary data directories (data/, postgres_data/, redis_data/)
-- **Displays generated credentials** (POSTGRES_PASSWORD, JWT_SECRET, etc.)
+
+The script uses the GitHub repository configured in the current directory when
+available. Set `SUB2API_RAW_BASE_URL` to use a mirror, and set `SUB2API_IMAGE`
+in `.env` when deploying a fork or privately built image.
+- **Stores generated credentials in `.env` without printing them**
 
 **After running the script:**
 ```bash
