@@ -550,11 +550,68 @@ func getEnvIntOrDefault(key string, defaultValue int) int {
 	return defaultValue
 }
 
+func maskSecretValue(value string) string {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return "<empty>"
+	}
+	if len(value) <= 4 {
+		return fmt.Sprintf("<set len=%d>", len(value))
+	}
+	return fmt.Sprintf("%s…%s (len=%d)", value[:2], value[len(value)-2:], len(value))
+}
+
+func logAutoSetupDiagnostics() {
+	logger.LegacyPrintf("setup", "%s", "Auto setup diagnostics: dumping selected environment variables")
+	keys := []string{
+		"AUTO_SETUP",
+		"DATA_DIR",
+		"TZ",
+		"TIMEZONE",
+		"SERVER_HOST",
+		"SERVER_PORT",
+		"SERVER_MODE",
+		"RUN_MODE",
+		"DATABASE_HOST",
+		"DATABASE_PORT",
+		"DATABASE_USER",
+		"DATABASE_PASSWORD",
+		"DATABASE_DBNAME",
+		"DATABASE_SSLMODE",
+		"REDIS_HOST",
+		"REDIS_PORT",
+		"REDIS_PASSWORD",
+		"REDIS_DB",
+		"REDIS_ENABLE_TLS",
+		"ADMIN_EMAIL",
+		"ADMIN_PASSWORD",
+		"JWT_SECRET",
+		"JWT_EXPIRE_HOUR",
+		"SETUP_MIGRATION_TIMEOUT_SECONDS",
+		"TOTP_ENCRYPTION_KEY",
+	}
+	for _, key := range keys {
+		value := os.Getenv(key)
+		if strings.Contains(strings.ToUpper(key), "PASSWORD") ||
+			strings.Contains(strings.ToUpper(key), "SECRET") ||
+			strings.Contains(strings.ToUpper(key), "KEY") {
+			logger.LegacyPrintf("setup", "%s=%s", key, maskSecretValue(value))
+			continue
+		}
+		if strings.TrimSpace(value) == "" {
+			logger.LegacyPrintf("setup", "%s=<empty>", key)
+			continue
+		}
+		logger.LegacyPrintf("setup", "%s=%s", key, value)
+	}
+}
+
 // AutoSetupFromEnv performs automatic setup using environment variables
 // This is designed for Docker deployment where all config is passed via env vars
 func AutoSetupFromEnv() error {
 	logger.LegacyPrintf("setup", "%s", "Auto setup enabled, configuring from environment variables...")
 	logger.LegacyPrintf("setup", "Data directory: %s", GetDataDir())
+	logAutoSetupDiagnostics()
 
 	// Get timezone from TZ or TIMEZONE env var (TZ is standard for Docker)
 	tz := getEnvOrDefault("TZ", "")
