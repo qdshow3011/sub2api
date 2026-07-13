@@ -35,6 +35,15 @@ class DockerDeploymentTests(unittest.TestCase):
             if "image: weishaw/sub2api" in text:
                 self.assertIn("${SUB2API_IMAGE:-", text, path)
 
+    def test_production_compose_builds_from_local_source(self):
+        with (DEPLOY / "docker-compose.yml").open("r", encoding="utf-8") as handle:
+            compose = yaml.safe_load(handle)
+        service = compose["services"]["sub2api"]
+        self.assertIn("build", service)
+        self.assertEqual(service["build"]["context"], "..")
+        self.assertEqual(service["build"]["dockerfile"], "deploy/Dockerfile")
+        self.assertEqual(service["build"]["args"]["COMMIT"], "${SOURCE_COMMIT:-docker}")
+
     def test_compose_files_do_not_define_custom_networks(self):
         for path in COMPOSE_FILES:
             with path.open("r", encoding="utf-8") as handle:

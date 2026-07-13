@@ -17,6 +17,12 @@ services:
   # ===========================================================================
   sub2api:
     image: ${SUB2API_IMAGE:-weishaw/sub2api:latest}
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+      args:
+        VERSION: ${SOURCE_COMMIT:-}
+        COMMIT: ${SOURCE_COMMIT:-docker}
     restart: unless-stopped
     ulimits:
       nofile:
