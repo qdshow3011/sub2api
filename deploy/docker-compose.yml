@@ -93,7 +93,7 @@ services:
       # =======================================================================
       # Setup Configuration
       # =======================================================================
-      - SETUP_MIGRATION_TIMEOUT_SECONDS=${SETUP_MIGRATION_TIMEOUT_SECONDS:-0}
+      - SETUP_MIGRATION_TIMEOUT_SECONDS=${SETUP_MIGRATION_TIMEOUT_SECONDS:-300}
 
       # =======================================================================
       # TOTP (2FA) Configuration

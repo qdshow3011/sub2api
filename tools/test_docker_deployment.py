@@ -82,6 +82,13 @@ class DockerDeploymentTests(unittest.TestCase):
         self.assertIn("HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3", dockerfile)
         self.assertIn('CMD curl -fsS "http://localhost:${SERVER_PORT:-8080}/health" >/dev/null || exit 1', dockerfile)
 
+    def test_setup_migration_timeout_is_extended_for_docker_deployments(self):
+        for path in COMPOSE_FILES:
+            with path.open("r", encoding="utf-8") as handle:
+                compose = yaml.safe_load(handle)
+            env_items = compose["services"]["sub2api"]["environment"]
+            self.assertIn("SETUP_MIGRATION_TIMEOUT_SECONDS=${SETUP_MIGRATION_TIMEOUT_SECONDS:-300}", env_items, path)
+
 
 if __name__ == "__main__":
     unittest.main()
