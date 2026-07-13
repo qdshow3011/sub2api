@@ -22,9 +22,9 @@ services:
       nofile:
         soft: 100000
         hard: 100000
-    ports:
-      # HOST_PORT is the host-side port. Keep SERVER_PORT fixed for the container.
-      - "${BIND_HOST:-0.0.0.0}:${HOST_PORT:-8080}:8080"
+    expose:
+      # Coolify/other proxies should route to the container port directly.
+      - "8080"
     volumes:
       # Data persistence (config.yaml will be auto-generated here)
       - sub2api_data:/app/data

@@ -3,6 +3,8 @@
 from pathlib import Path
 import unittest
 
+import yaml
+
 
 ROOT = Path(__file__).resolve().parents[1]
 DEPLOY = ROOT / "deploy"
@@ -20,7 +22,6 @@ class DockerDeploymentTests(unittest.TestCase):
             text = path.read_text(encoding="utf-8")
             self.assertNotIn("container_name:", text, path)
 
-
     def test_redis_password_is_expanded_inside_the_container(self):
         for path in COMPOSE_FILES:
             text = path.read_text(encoding="utf-8")
@@ -28,20 +29,32 @@ class DockerDeploymentTests(unittest.TestCase):
                 self.assertIn("$${REDIS_PASSWORD", text, path)
                 self.assertNotIn("${REDIS_PASSWORD:+", text, path)
 
-
     def test_compose_image_can_be_overridden(self):
         for path in COMPOSE_FILES:
             text = path.read_text(encoding="utf-8")
             if "image: weishaw/sub2api" in text:
                 self.assertIn("${SUB2API_IMAGE:-", text, path)
 
-    def test_host_port_is_separate_from_container_port(self):
-        for path in COMPOSE_FILES:
-            text = path.read_text(encoding="utf-8")
-            if '"${BIND_HOST' in text:
-                self.assertIn("${HOST_PORT:-8080}:8080", text, path)
-                self.assertNotIn("${SERVER_PORT:-8080}:8080", text, path)
+    def test_production_compose_does_not_publish_a_host_port(self):
+        with (DEPLOY / "docker-compose.yml").open("r", encoding="utf-8") as handle:
+            compose = yaml.safe_load(handle)
+        service = compose["services"]["sub2api"]
+        self.assertNotIn("ports", service)
+        self.assertEqual(service.get("expose"), ["8080"])
 
+    def test_local_compose_files_keep_host_port_mappings(self):
+        for path in (
+            DEPLOY / "docker-compose.local.yml",
+            DEPLOY / "docker-compose.dev.yml",
+            DEPLOY / "docker-compose.standalone.yml",
+        ):
+            with path.open("r", encoding="utf-8") as handle:
+                compose = yaml.safe_load(handle)
+            ports = compose["services"]["sub2api"].get("ports", [])
+            self.assertTrue(ports, path)
+            self.assertTrue(any(":8080" in port for port in ports), path)
+            self.assertTrue(any("${HOST_PORT:-8080}" in port for port in ports), path)
+            self.assertFalse(any("${SERVER_PORT:-8080}" in port for port in ports), path)
 
     def test_deploy_script_validates_downloads_and_docker(self):
         text = (DEPLOY / "docker-deploy.sh").read_text(encoding="utf-8")
