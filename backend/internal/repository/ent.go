@@ -6,6 +6,9 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"net"
+	"net/url"
+	"strconv"
 	"time"
 
 	"github.com/Wei-Shaw/sub2api/ent"
@@ -44,7 +47,7 @@ func InitEnt(cfg *config.Config) (*ent.Client, *sql.DB, error) {
 
 	// 构建包含时区信息的数据库连接字符串 (DSN)。
 	// 时区信息会传递给 PostgreSQL，确保数据库层面的时间处理正确。
-	dsn := cfg.Database.DSNWithTimezone(cfg.Timezone)
+	dsn := buildPostgresURI(cfg.Database.Host, cfg.Database.Port, cfg.Database.User, cfg.Database.Password, cfg.Database.DBName, cfg.Database.SSLMode, cfg.Timezone)
 
 	// 使用 Ent 的 SQL 驱动打开 PostgreSQL 连接。
 	// dialect.Postgres 指定使用 PostgreSQL 方言进行 SQL 生成。
@@ -96,4 +99,27 @@ func InitEnt(cfg *config.Config) (*ent.Client, *sql.DB, error) {
 	}
 
 	return client, drv.DB(), nil
+}
+
+func buildPostgresURI(host string, port int, user, password, dbName, sslmode, tz string) string {
+	if tz == "" {
+		tz = "Asia/Shanghai"
+	}
+
+	u := &url.URL{
+		Scheme: "postgres",
+		Host:   net.JoinHostPort(host, strconv.Itoa(port)),
+		Path:   "/" + dbName,
+	}
+	if password == "" {
+		u.User = url.User(user)
+	} else {
+		u.User = url.UserPassword(user, password)
+	}
+
+	query := u.Query()
+	query.Set("sslmode", sslmode)
+	query.Set("options", "-c TimeZone="+tz)
+	u.RawQuery = query.Encode()
+	return u.String()
 }

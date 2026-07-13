@@ -19,6 +19,7 @@ import (
 	"github.com/Wei-Shaw/sub2api/internal/config"
 	"github.com/Wei-Shaw/sub2api/internal/handler"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/logger"
+	"github.com/Wei-Shaw/sub2api/internal/pkg/startupretry"
 	"github.com/Wei-Shaw/sub2api/internal/server/middleware"
 	"github.com/Wei-Shaw/sub2api/internal/setup"
 	"github.com/Wei-Shaw/sub2api/internal/web"
@@ -55,6 +56,7 @@ func init() {
 func main() {
 	logger.InitBootstrap()
 	defer logger.Sync()
+	log.Printf("BOOTSTRAP_BUILD version=%s commit=%s date=%s build_type=%s", Version, Commit, Date, BuildType)
 
 	// Parse command line flags
 	setupMode := flag.Bool("setup", false, "Run setup wizard in CLI mode")
@@ -79,7 +81,7 @@ func main() {
 		// Check if auto-setup is enabled (for Docker deployment)
 		if setup.AutoSetupEnabled() {
 			log.Println("Auto setup mode enabled...")
-			if err := setup.AutoSetupFromEnv(); err != nil {
+			if err := startupretry.Retry("auto setup", 12, 5*time.Second, setup.AutoSetupFromEnv); err != nil {
 				log.Fatalf("Auto setup failed: %v", err)
 			}
 			// Continue to main server after auto-setup
@@ -148,9 +150,16 @@ func runMainServer() {
 		BuildType: BuildType,
 	}
 
-	app, err := initializeApplication(buildInfo)
-	if err != nil {
+	var app *Application
+	if err := startupretry.Retry("application initialization", 12, 5*time.Second, func() error {
+		var initErr error
+		app, initErr = initializeApplication(buildInfo)
+		return initErr
+	}); err != nil {
 		log.Fatalf("Failed to initialize application: %v", err)
+	}
+	if app == nil {
+		log.Fatalf("Failed to initialize application: application is nil after retry")
 	}
 	defer app.Cleanup()
 
