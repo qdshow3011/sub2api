@@ -320,7 +320,7 @@ docker compose logs -f sub2api
 - 自动生成安全凭证（JWT_SECRET、TOTP_ENCRYPTION_KEY、POSTGRES_PASSWORD）
 - 创建 `.env` 文件并填充自动生成的密钥
 - 创建数据目录（使用本地目录，便于备份和迁移）
-- 显示生成的凭证供你记录
+- 将生成的凭证保存到 `.env`，不在终端明文打印
 
 #### 手动部署
 

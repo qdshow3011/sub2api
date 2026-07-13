@@ -12,8 +12,7 @@
 
 services:
   sub2api:
-    image: weishaw/sub2api:latest
-    container_name: sub2api
+    image: ${SUB2API_IMAGE:-weishaw/sub2api:latest}
     restart: unless-stopped
     ulimits:
       nofile:

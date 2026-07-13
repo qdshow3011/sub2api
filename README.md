@@ -316,7 +316,7 @@ docker compose logs -f sub2api
 - Generates secure credentials (JWT_SECRET, TOTP_ENCRYPTION_KEY, POSTGRES_PASSWORD)
 - Creates `.env` file with auto-generated secrets
 - Creates data directories (uses local directories for easy backup/migration)
-- Displays generated credentials for your reference
+- Saves generated credentials to `.env` without printing them to the terminal
 
 #### Manual Deployment
 
