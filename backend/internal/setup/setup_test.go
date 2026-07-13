@@ -1,6 +1,7 @@
 package setup
 
 import (
+	"net/url"
 	"os"
 	"strings"
 	"testing"
@@ -117,13 +118,46 @@ func TestBuildDatabaseConnectionDSNsUsesPostgresForBootstrap(t *testing.T) {
 
 	bootstrapDSN, targetDSN := buildDatabaseConnectionDSNs(cfg)
 
-	if !strings.Contains(bootstrapDSN, "dbname=postgres") {
-		t.Fatalf("bootstrap DSN = %q, want default postgres database", bootstrapDSN)
+	if bootstrapDSN != "postgres://sub2api:secret@db:5432/postgres?sslmode=disable" {
+		t.Fatalf("bootstrap DSN = %q, want postgres URI with maintenance DB", bootstrapDSN)
 	}
-	if strings.Contains(bootstrapDSN, "dbname=sub2api") {
-		t.Fatalf("bootstrap DSN = %q, should not connect to target database before checking/creating it", bootstrapDSN)
+	if targetDSN != "postgres://sub2api:secret@db:5432/sub2api?sslmode=disable" {
+		t.Fatalf("target DSN = %q, want postgres URI with target DB", targetDSN)
 	}
-	if !strings.Contains(targetDSN, "dbname=sub2api") {
-		t.Fatalf("target DSN = %q, want configured database", targetDSN)
+}
+
+func TestBuildDatabaseConnectionDSNsEscapesCredentials(t *testing.T) {
+	cfg := &DatabaseConfig{
+		Host:     "db",
+		Port:     5432,
+		User:     "sub2api user",
+		Password: "pa ss=word",
+		DBName:   "sub2api",
+		SSLMode:  "disable",
+	}
+
+	bootstrapDSN, targetDSN := buildDatabaseConnectionDSNs(cfg)
+
+	for _, dsn := range []string{bootstrapDSN, targetDSN} {
+		if strings.Contains(dsn, " ") {
+			t.Fatalf("DSN should be URI-encoded, got %q", dsn)
+		}
+		if !strings.HasPrefix(dsn, "postgres://") {
+			t.Fatalf("DSN should use postgres URI form, got %q", dsn)
+		}
+		parsed, err := url.Parse(dsn)
+		if err != nil {
+			t.Fatalf("DSN should parse as URL, got %q: %v", dsn, err)
+		}
+		if parsed.User == nil {
+			t.Fatalf("DSN should include userinfo, got %q", dsn)
+		}
+		password, ok := parsed.User.Password()
+		if !ok {
+			t.Fatalf("DSN should preserve password, got %q", dsn)
+		}
+		if password != "pa ss=word" {
+			t.Fatalf("DSN password = %q, want original password", password)
+		}
 	}
 }

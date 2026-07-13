@@ -7,6 +7,8 @@ import (
 	"database/sql"
 	"encoding/hex"
 	"fmt"
+	"net"
+	"net/url"
 	"os"
 	"strconv"
 	"strings"
@@ -163,10 +165,21 @@ func NeedsSetup() bool {
 }
 
 func buildPostgresDSN(cfg *DatabaseConfig, dbName string) string {
-	return fmt.Sprintf(
-		"host=%s port=%d user=%s password=%s dbname=%s sslmode=%s",
-		cfg.Host, cfg.Port, cfg.User, cfg.Password, dbName, cfg.SSLMode,
-	)
+	u := &url.URL{
+		Scheme: "postgres",
+		Host:   net.JoinHostPort(cfg.Host, strconv.Itoa(cfg.Port)),
+		Path:   "/" + dbName,
+	}
+	if cfg.Password == "" {
+		u.User = url.User(cfg.User)
+	} else {
+		u.User = url.UserPassword(cfg.User, cfg.Password)
+	}
+
+	query := u.Query()
+	query.Set("sslmode", cfg.SSLMode)
+	u.RawQuery = query.Encode()
+	return u.String()
 }
 
 func buildDatabaseConnectionDSNs(cfg *DatabaseConfig) (bootstrapDSN, targetDSN string) {
