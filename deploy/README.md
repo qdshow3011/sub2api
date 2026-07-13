@@ -555,7 +555,7 @@ sudo systemctl status redis
 
 ### Common Issues
 
-1. **Port already in use**: Change `HOST_PORT` in `.env` (for example, `HOST_PORT=8081`) when using `docker-compose.local.yml`, `docker-compose.dev.yml`, or `docker-compose.standalone.yml`. The Coolify-oriented `docker-compose.yml` does not publish a host port; configure the service to route to container port `8080`.
+1. **Port already in use**: Change `HOST_PORT` in `.env` (for example, `HOST_PORT=8081`) when using `docker-compose.local.yml`, `docker-compose.dev.yml`, or `docker-compose.standalone.yml`. The Coolify-oriented `docker-compose.yml` does not publish a host port and does not define a custom network; configure the service to route to container port `8080`.
 2. **Database connection failed**: Check PostgreSQL is running and credentials are correct
 3. **Redis connection failed**: Check Redis is running and password is correct
 4. **Permission denied**: Ensure proper file ownership for binary install

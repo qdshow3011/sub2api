@@ -35,6 +35,14 @@ class DockerDeploymentTests(unittest.TestCase):
             if "image: weishaw/sub2api" in text:
                 self.assertIn("${SUB2API_IMAGE:-", text, path)
 
+    def test_compose_files_do_not_define_custom_networks(self):
+        for path in COMPOSE_FILES:
+            with path.open("r", encoding="utf-8") as handle:
+                compose = yaml.safe_load(handle)
+            self.assertNotIn("networks", compose, path)
+            for service_name, service in compose["services"].items():
+                self.assertNotIn("networks", service, f"{path}::{service_name}")
+
     def test_production_compose_does_not_publish_a_host_port(self):
         with (DEPLOY / "docker-compose.yml").open("r", encoding="utf-8") as handle:
             compose = yaml.safe_load(handle)
