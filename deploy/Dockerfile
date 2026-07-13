@@ -46,8 +46,8 @@ FROM ${GOLANG_IMAGE} AS backend-builder
 ARG VERSION=
 ARG COMMIT=docker
 ARG DATE
-ARG GOPROXY
-ARG GOSUMDB
+ARG GOPROXY=https://goproxy.cn,direct
+ARG GOSUMDB=sum.golang.google.cn
 
 ENV GOPROXY=${GOPROXY}
 ENV GOSUMDB=${GOSUMDB}
@@ -68,9 +68,9 @@ COPY backend/ ./
 COPY --from=frontend-builder /app/backend/internal/web/dist ./internal/web/dist
 
 # Build the binary (BuildType=release for CI builds, embed frontend)
-# Version precedence: build arg VERSION > exact git tag > cmd/server/VERSION
+# Version precedence: build arg VERSION > cmd/server/VERSION
 RUN VERSION_VALUE="${VERSION}" && \
-    if [ -z "${VERSION_VALUE}" ]; then VERSION_VALUE="$(./scripts/resolve-version.sh)"; fi && \
+    if [ -z "${VERSION_VALUE}" ]; then VERSION_VALUE="$(tr -d '\r\n' < ./cmd/server/VERSION)"; fi && \
     DATE_VALUE="${DATE:-$(date -u +%Y-%m-%dT%H:%M:%SZ)}" && \
     CGO_ENABLED=0 GOOS=linux go build \
     -tags embed \

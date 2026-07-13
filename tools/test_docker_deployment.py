@@ -35,6 +35,22 @@ class DockerDeploymentTests(unittest.TestCase):
             if "image: weishaw/sub2api" in text:
                 self.assertIn("${SUB2API_IMAGE:-", text, path)
 
+    def test_production_compose_builds_from_local_source(self):
+        with (DEPLOY / "docker-compose.yml").open("r", encoding="utf-8") as handle:
+            compose = yaml.safe_load(handle)
+        service = compose["services"]["sub2api"]
+        self.assertIn("build", service)
+        self.assertEqual(service["build"]["context"], ".")
+        self.assertEqual(service["build"]["dockerfile"], "deploy/Dockerfile")
+        self.assertEqual(service["build"]["args"]["COMMIT"], "${SOURCE_COMMIT:-docker}")
+        self.assertEqual(service["build"]["args"]["GOPROXY"], "${GOPROXY:-https://goproxy.cn,direct}")
+        self.assertEqual(service["build"]["args"]["GOSUMDB"], "${GOSUMDB:-sum.golang.google.cn}")
+
+    def test_release_dockerfile_version_fallback_uses_version_file(self):
+        text = (DEPLOY / "Dockerfile").read_text(encoding="utf-8")
+        self.assertNotIn("./scripts/resolve-version.sh", text)
+        self.assertIn("cmd/server/VERSION", text)
+
     def test_compose_files_do_not_define_custom_networks(self):
         for path in COMPOSE_FILES:
             with path.open("r", encoding="utf-8") as handle:
