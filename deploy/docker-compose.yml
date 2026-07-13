@@ -23,6 +23,8 @@ services:
       args:
         VERSION: ${SOURCE_COMMIT:-}
         COMMIT: ${SOURCE_COMMIT:-docker}
+        GOPROXY: ${GOPROXY:-https://goproxy.cn,direct}
+        GOSUMDB: ${GOSUMDB:-sum.golang.google.cn}
     restart: unless-stopped
     ulimits:
       nofile:

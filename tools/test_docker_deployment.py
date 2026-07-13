@@ -43,6 +43,8 @@ class DockerDeploymentTests(unittest.TestCase):
         self.assertEqual(service["build"]["context"], ".")
         self.assertEqual(service["build"]["dockerfile"], "deploy/Dockerfile")
         self.assertEqual(service["build"]["args"]["COMMIT"], "${SOURCE_COMMIT:-docker}")
+        self.assertEqual(service["build"]["args"]["GOPROXY"], "${GOPROXY:-https://goproxy.cn,direct}")
+        self.assertEqual(service["build"]["args"]["GOSUMDB"], "${GOSUMDB:-sum.golang.google.cn}")
 
     def test_release_dockerfile_version_fallback_uses_version_file(self):
         text = (DEPLOY / "Dockerfile").read_text(encoding="utf-8")
