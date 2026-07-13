@@ -44,6 +44,11 @@ class DockerDeploymentTests(unittest.TestCase):
         self.assertEqual(service["build"]["dockerfile"], "deploy/Dockerfile")
         self.assertEqual(service["build"]["args"]["COMMIT"], "${SOURCE_COMMIT:-docker}")
 
+    def test_release_dockerfile_version_fallback_uses_version_file(self):
+        text = (DEPLOY / "Dockerfile").read_text(encoding="utf-8")
+        self.assertNotIn("./scripts/resolve-version.sh", text)
+        self.assertIn("cmd/server/VERSION", text)
+
     def test_compose_files_do_not_define_custom_networks(self):
         for path in COMPOSE_FILES:
             with path.open("r", encoding="utf-8") as handle:
